@@ -39,10 +39,10 @@ int main()
         
         writeFile(file, buffer);
 
-        std::cout << "Payload: "     << (int)received
+        /*std::cout << "Payload: "     << (int)received
                   << " Value type: "  << (int)buffer.valueType
                   << " Sensor nr: "   << (int)buffer.sensorNumber
-                  << " Reading: "     << buffer.reading << "\n";     
+                  << " Reading: "     << buffer.reading << "\n"; */   
     }
 }
 
