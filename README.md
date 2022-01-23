@@ -13,12 +13,7 @@
 
 
 
-* Solution: 
-    * connection made to host, 
-    * listen port 12345, 
-    * write data to file, 
-    * calculate running average + printing to cout after 1sec.
-    * Average is calculated as port 12346 not open.
+* Solution: connection made to host, listen port 12345, write data to file, calculate running average + printing to cout after 1sec, average is calculated as port 12346 not open.
 
     * **classes**: connection, intervalTimer, runningAverage.
     
