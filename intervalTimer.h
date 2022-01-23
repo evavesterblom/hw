@@ -1,8 +1,7 @@
 #include <functional>
 #include <thread>
 
-class intervalTimer
-{
+class intervalTimer{
     public:
         void run();
         void stop();

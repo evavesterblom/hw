@@ -5,6 +5,7 @@
 #include <iostream>
 #include <functional>
 #include <array>
+volatile sig_atomic_t terminate = 0;
 
 struct __attribute__((__packed__)) reading {
   uint8_t sensorNumber;
@@ -14,34 +15,43 @@ struct __attribute__((__packed__)) reading {
 
 void writeFile(std::fstream &file, struct reading &buffer);
 void printResetAverage(std::array<runningAverage, 11> &averageArray);
+void close(int sig);
 
 int main() {
-    connection connection;
-    connection.connect(12345, "127.0.0.1");
+  signal(SIGINT, close); 
 
-    std::array<runningAverage, 11> averageArray = {}; //averageArray[sensorNr] holds running average obj for sensor
-    for (int i = 1; i <= 10; ++i) averageArray[i] = runningAverage();
+  connection connection;
+  connection.connect(12345, "127.0.0.1");
 
-    intervalTimer intervalTimer(std::bind(&printResetAverage, std::ref(averageArray)), 5000);
-    intervalTimer.run();
-    
-    std::fstream file;
-    file.open ("readings.csv", std::fstream::out); 
-    file << "unix timestamp, sensor number, reading\n";
-    struct reading buffer;
-    
-    while(1){
-        buffer.reading = 0;
-        buffer.sensorNumber = 0;
-        buffer.valueType = 0;
-        int received;
-        
-        received = connection.receive(&buffer, sizeof(buffer));
-        
-        writeFile(file, buffer);
+  std::array<runningAverage, 11> averageArray = {}; //averageArray[sensorNr] holds running average obj for sensor
+  for (int i = 1; i <= 10; ++i) averageArray[i] = runningAverage();
 
-        averageArray[(int)buffer.sensorNumber].set(buffer.reading);
-    }
+  intervalTimer intervalTimer(std::bind(&printResetAverage, std::ref(averageArray)), 5000);
+  intervalTimer.run();
+  
+  std::fstream file;
+  file.open ("readings.csv", std::fstream::out); 
+  file << "unix timestamp, sensor number, reading\n";
+  struct reading buffer;
+  
+  while(terminate == 0){
+      buffer.reading = 0;
+      buffer.sensorNumber = 0;
+      buffer.valueType = 0;
+      int received;
+      
+      received = connection.receive(&buffer, sizeof(buffer));
+      
+      writeFile(file, buffer);
+
+      averageArray[(int)buffer.sensorNumber].set(buffer.reading);
+  }
+
+  intervalTimer.stop();
+  file.close();
+  connection.closed();
+  std::cout << "Terminating..." << "\n";
+  
 }
 
 void writeFile(std::fstream &file, struct reading &buffer){ 
@@ -64,3 +74,5 @@ void printResetAverage(std::array<runningAverage, 11> &averageArray){
   }
   std::cout << "\n";
 }
+
+void close(int sig){ terminate = 1;}
