@@ -3,6 +3,7 @@
 #include "intervalTimer.h"
 #include <fstream> 
 #include <iostream>
+#include <functional>
 
 struct __attribute__((__packed__)) reading {
   uint8_t sensorNumber;
@@ -11,7 +12,7 @@ struct __attribute__((__packed__)) reading {
 } ;
 
 void writeFile(std::fstream &file, struct reading &buffer);
-void greet();
+void greet(runningAverage &r);
 
 int main() 
 {
@@ -20,7 +21,7 @@ int main()
 
     runningAverage runningAverage;
 
-    intervalTimer intervalTimer(greet, 3000);
+    intervalTimer intervalTimer(std::bind(&greet, std::ref(runningAverage)), 5000);
     intervalTimer.run();
     
     std::fstream file;
@@ -43,6 +44,17 @@ int main()
                   << " Value type: "  << (int)buffer.valueType
                   << " Sensor nr: "   << (int)buffer.sensorNumber
                   << " Reading: "     << buffer.reading << "\n"; */   
+
+        if ((int)buffer.sensorNumber == 1)
+        {
+            runningAverage.set(buffer.reading);
+            std::cout << "... Setting runningAverage " 
+                      << buffer.reading 
+                      << " Avg: " << runningAverage.getAverage()
+                      << " Addr: " << &runningAverage
+                      << "\n";
+
+        }
     }
 }
 
@@ -55,7 +67,12 @@ void writeFile(std::fstream &file, struct reading &buffer){
   file.flush();
 }
 
-void greet()
+void greet(runningAverage &runningAverage)
 {
-   std::cout << ".........This message was printed from second thread" << "\n";
+   std::cout << "... This message was printed from second thread.  Avg:" 
+            << runningAverage.getAverage()
+            << " Addr: " << &runningAverage
+            << "\n";
+
+    runningAverage.reset();
 }
