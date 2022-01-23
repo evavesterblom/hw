@@ -1,5 +1,6 @@
 #include "connection.h"
 #include "runningAverage.h"
+#include "intervalTimer.h"
 #include <fstream> 
 #include <iostream>
 
@@ -10,17 +11,18 @@ struct __attribute__((__packed__)) reading {
 } ;
 
 void writeFile(std::fstream &file, struct reading &buffer);
+void greet();
 
 int main() 
 {
-    // timer thread 
-    
-
     connection connection;
     connection.connect(12345, "127.0.0.1");
 
     runningAverage runningAverage;
 
+    intervalTimer intervalTimer(greet, 3000);
+    intervalTimer.run();
+    
     std::fstream file;
     file.open ("readings.csv", std::fstream::out); 
     file << "unix timestamp, sensor number, reading\n";
@@ -36,13 +38,11 @@ int main()
         received = connection.receive(&buffer, sizeof(buffer));
         
         writeFile(file, buffer);
-        
-        std::cout << "\n";
 
-        /*std::cout << "Payload: "     << (int)received
+        std::cout << "Payload: "     << (int)received
                   << " Value type: "  << (int)buffer.valueType
                   << " Sensor nr: "   << (int)buffer.sensorNumber
-                  << " Reading: "     << buffer.reading << "\n";*/        
+                  << " Reading: "     << buffer.reading << "\n";     
     }
 }
 
@@ -53,4 +53,9 @@ void writeFile(std::fstream &file, struct reading &buffer){
        << buffer.reading
        << "\n";
   file.flush();
+}
+
+void greet()
+{
+   std::cout << ".........This message was printed from second thread" << "\n";
 }
