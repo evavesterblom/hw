@@ -13,19 +13,16 @@ struct __attribute__((__packed__)) reading {
 } ;
 
 void writeFile(std::fstream &file, struct reading &buffer);
-void greet(std::array<runningAverage, 10> &averageArray);
+void printResetAverage(std::array<runningAverage, 11> &averageArray);
 
-int main() 
-{
+int main() {
     connection connection;
     connection.connect(12345, "127.0.0.1");
 
-    runningAverage average;
+    std::array<runningAverage, 11> averageArray = {}; //averageArray[sensorNr] holds running average obj for sensor
+    for (int i = 1; i <= 10; ++i) averageArray[i] = runningAverage();
 
-    std::array<runningAverage, 10> averageArray = {};
-    for (int i = 0; i < 10; ++i) averageArray[i] = runningAverage();
-
-    intervalTimer intervalTimer(std::bind(&greet, std::ref(averageArray)), 5000);
+    intervalTimer intervalTimer(std::bind(&printResetAverage, std::ref(averageArray)), 5000);
     intervalTimer.run();
     
     std::fstream file;
@@ -34,7 +31,6 @@ int main()
     struct reading buffer;
     
     while(1){
-
         buffer.reading = 0;
         buffer.sensorNumber = 0;
         buffer.valueType = 0;
@@ -44,25 +40,11 @@ int main()
         
         writeFile(file, buffer);
 
-        /*std::cout << "Payload: "     << (int)received
-                  << " Value type: "  << (int)buffer.valueType
-                  << " Sensor nr: "   << (int)buffer.sensorNumber
-                  << " Reading: "     << buffer.reading << "\n"; */   
-
-        if ((int)buffer.sensorNumber == 1)
-        {
-            int sensorNumber = (int)buffer.sensorNumber;
-            averageArray[sensorNumber].set(buffer.reading);
-            std::cout << "... Setting runningAverage for sensor: " << (int)buffer.sensorNumber
-                      << " reading: " << buffer.reading 
-                      << " addr: " << &averageArray
-                      << "\n";
-        }
+        averageArray[(int)buffer.sensorNumber].set(buffer.reading);
     }
 }
 
 void writeFile(std::fstream &file, struct reading &buffer){ 
-
   file << std::chrono::system_clock::now().time_since_epoch().count()<< ", "
        << (int)buffer.sensorNumber << ", "
        << buffer.reading
@@ -70,11 +52,15 @@ void writeFile(std::fstream &file, struct reading &buffer){
   file.flush();
 }
 
-void greet(std::array<runningAverage, 10> &averageArray)
-{
-   std::cout << "... This message was printed from second thread. " 
-            << " averagae for sensor 1 is " << averageArray[1].getAverage()
-            << " addr is " << &averageArray
-            << "\n";
-     for (int i = 0; i < 10; ++i) averageArray[i].reset();
+void printResetAverage(std::array<runningAverage, 11> &averageArray){
+  std::cout << "Printing averages from second thread" << "\n";
+
+  for (int i = 1; i <= 10; ++i) 
+  {
+    std::cout << "Sensor number: " << i
+              << " Average: " << averageArray[i].getAverage()
+              << "\n";
+    averageArray[i].reset();
+  }
+  std::cout << "\n";
 }
