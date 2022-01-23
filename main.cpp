@@ -4,6 +4,7 @@
 #include <fstream> 
 #include <iostream>
 #include <functional>
+#include <array>
 
 struct __attribute__((__packed__)) reading {
   uint8_t sensorNumber;
@@ -12,16 +13,19 @@ struct __attribute__((__packed__)) reading {
 } ;
 
 void writeFile(std::fstream &file, struct reading &buffer);
-void greet(runningAverage &r);
+void greet(std::array<runningAverage, 10> &averageArray);
 
 int main() 
 {
     connection connection;
     connection.connect(12345, "127.0.0.1");
 
-    runningAverage runningAverage;
+    runningAverage average;
 
-    intervalTimer intervalTimer(std::bind(&greet, std::ref(runningAverage)), 5000);
+    std::array<runningAverage, 10> averageArray = {};
+    for (int i = 0; i < 10; ++i) averageArray[i] = runningAverage();
+
+    intervalTimer intervalTimer(std::bind(&greet, std::ref(averageArray)), 5000);
     intervalTimer.run();
     
     std::fstream file;
@@ -47,13 +51,12 @@ int main()
 
         if ((int)buffer.sensorNumber == 1)
         {
-            runningAverage.set(buffer.reading);
-            std::cout << "... Setting runningAverage " 
-                      << buffer.reading 
-                      << " Avg: " << runningAverage.getAverage()
-                      << " Addr: " << &runningAverage
+            int sensorNumber = (int)buffer.sensorNumber;
+            averageArray[sensorNumber].set(buffer.reading);
+            std::cout << "... Setting runningAverage for sensor: " << (int)buffer.sensorNumber
+                      << " reading: " << buffer.reading 
+                      << " addr: " << &averageArray
                       << "\n";
-
         }
     }
 }
@@ -67,12 +70,11 @@ void writeFile(std::fstream &file, struct reading &buffer){
   file.flush();
 }
 
-void greet(runningAverage &runningAverage)
+void greet(std::array<runningAverage, 10> &averageArray)
 {
-   std::cout << "... This message was printed from second thread.  Avg:" 
-            << runningAverage.getAverage()
-            << " Addr: " << &runningAverage
+   std::cout << "... This message was printed from second thread. " 
+            << " averagae for sensor 1 is " << averageArray[1].getAverage()
+            << " addr is " << &averageArray
             << "\n";
-
-    runningAverage.reset();
+     for (int i = 0; i < 10; ++i) averageArray[i].reset();
 }
