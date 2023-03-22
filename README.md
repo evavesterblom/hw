@@ -1,3 +1,4 @@
+# Sensor Data collect and save via web socket C++
 *   General requirements  
     *   Have to compile and run on Linux (and Windows)
     *   Solution in git
